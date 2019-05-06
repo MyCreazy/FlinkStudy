@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false" scan="false" scanPeriod="30 seconds">
+    <!-- 属性设置 -->
+    <property name="appName" value="event-trigger"/>
+    <property name="LOG_HOME" value="./logs/my_log" />
+    <!-- 应用名称 -->
+    <contextName>${appName}</contextName>
+
+    <!-- 控制台打印日志的相关配置 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 日志格式 -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss SSS, GMT+8} %X{requestId} [%-5level] [%thread] [%C{1}:%line] %m%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${logging.std.level:-INFO}</level>
+        </filter>
+    </appender>
+
+    <!--照elk标准-->
+    <!-- INFO -->
+    <appender name="INFO-OUT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.dir:-logs}/${appName}.info.log</file>
+
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <pattern>
+                    <pattern>
+                        {
+                        "service": "event-trigger",
+                        "host": "${HOSTNAME}",
+                        "ts": "%d{yyyy-MM-dd HH:mm:ss SSS, GMT+8}",
+                        "lvl": "%-5level",
+                        "thread": "%thread",
+                        "class": "%C{1}:%line",
+                        "requestId": "%X{requestId}",
+                        "msg": "%m"
+                        }
+                    </pattern>
+                </pattern>
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                    <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                        <maxDepthPerThrowable>100</maxDepthPerThrowable>
+                        <maxLength>32768</maxLength>
+                        <shortenedClassNameLength>60</shortenedClassNameLength>
+                        <rootCauseFirst>false</rootCauseFirst>
+                    </throwableConverter>
+                </stackTrace>
+            </providers>
+        </encoder>
+
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${log.dir:-logs}/${appName}.info.%d{yyyy-MM-dd, GMT+8}.%i.log</fileNamePattern>
+
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>10</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ERROR -->
+    <appender name="ERROR-OUT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.dir:-logs}/${appName}.error.log</file>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss SSS, GMT+8} %X{requestId} [%-5level] [%thread] [%C{1}:%line] %m%n</pattern>
+        </encoder>
+
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>${log.dir:-logs}/${appName}.error.%d{yyyy-MM-dd, GMT+8}.%i.log</fileNamePattern>
+
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>10</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+
+    <!-- Log Level:  TRACE, DEBUG, INFO, WARN, ERROR, FATAL, OFF -->
+    <root>
+        <level value="${log.level:-INFO}"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="INFO-OUT"/>
+        <appender-ref ref="ERROR-OUT"/>
+    </root>
+</configuration>
